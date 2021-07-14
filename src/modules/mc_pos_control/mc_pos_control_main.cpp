@@ -229,7 +229,12 @@ private:
 		(ParamInt<px4::params::MPC_ALT_MODE>) _alt_mode,
 		(ParamFloat<px4::params::RC_FLT_CUTOFF>) _rc_flt_cutoff,
 		(ParamFloat<px4::params::RC_FLT_SMP_RATE>) _rc_flt_smp_rate,
-		(ParamFloat<px4::params::MPC_ACC_HOR_ESTM>) _acc_max_estimator_xy
+		(ParamFloat<px4::params::MPC_ACC_HOR_ESTM>) _acc_max_estimator_xy,
+
+		//Yun 20210714 
+		(ParamFloat<px4::params::BEGIN_EXP>) _param_begin_exp,
+		(ParamFloat<px4::params::ROLL_SP_CORR>) _param_roll_sp_corr,
+		(ParamFloat<px4::params::PITCH_SP_CORR>) _param_pitch_sp_corr
 
 	);
 
@@ -255,8 +260,7 @@ private:
 	};
 
 	manual_stick_input _user_intention_xy; /**< defines what the user intends to do derived from the stick input */
-	manual_stick_input
-	_user_intention_z; /**< defines what the user intends to do derived from the stick input in z direciton */
+	manual_stick_input _user_intention_z; /**< defines what the user intends to do derived from the stick input in z direciton */
 
 	matrix::Vector3f _pos_p;
 	matrix::Vector3f _vel_p;
@@ -300,6 +304,11 @@ private:
 	float _z_derivative; /**< velocity in z that agrees with position rate */
 
 	float _takeoff_vel_limit; /**< velocity limit value which gets ramped up */
+
+	//Yun. 20210714
+	float _begin_exp;
+	float _roll_sp_corr;
+	float _pitch_sp_corr;
 
 	// counters for reset events on position and velocity states
 	// they are used to identify a reset event
@@ -480,6 +489,9 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_manual_jerk_limit_z(1.0f),
 	_z_derivative(0.0f),
 	_takeoff_vel_limit(0.0f),
+	_begin_exp(0.0f),
+	_roll_sp_corr(0.0f),
+	_pitch_sp_corr(0.0f),
 	_z_reset_counter(0),
 	_xy_reset_counter(0),
 	_heading_reset_counter(0)
@@ -632,6 +644,11 @@ MulticopterPositionControl::parameters_update(bool force)
 		_acceleration_state_dependent_z = _acceleration_z_max_up.get();
 		/* we only use jerk for braking if jerk_hor_max > jerk_hor_min; otherwise just set jerk very large */
 		_manual_jerk_limit_z = (_jerk_hor_max.get() > _jerk_hor_min.get()) ? _jerk_hor_max.get() : 1000000.f;
+
+		//Yun 20210714.
+		_begin_exp = _param_begin_exp.get();
+		_roll_sp_corr = _param_roll_sp_corr.get();
+		_pitch_sp_corr = _param_pitch_sp_corr.get();
 
 	}
 
@@ -2753,7 +2770,8 @@ MulticopterPositionControl::generate_attitude_setpoint()
 	_man_yaw_offset = 0.f;
 
 	/* reset yaw setpoint to current position if needed */
-	if (_reset_yaw_sp) {
+	//if (_reset_yaw_sp) {
+	if (_reset_yaw_sp && (_begin_exp < 0.0f)) {
 		_reset_yaw_sp = false;
 		_att_sp.yaw_body = _yaw;
 
@@ -2876,6 +2894,13 @@ MulticopterPositionControl::generate_attitude_setpoint()
 			_att_sp.roll_body = -asinf(z_roll_pitch_sp(1));
 			_att_sp.pitch_body = atan2f(z_roll_pitch_sp(0), z_roll_pitch_sp(2));
 		}
+
+		//Yun 20210714. This correction only works in the attitude control mode .
+		_roll_sp_corr = math::constrain(_roll_sp_corr, -10.0f, 10.0f);
+		_pitch_sp_corr = math::constrain(_pitch_sp_corr, -10.0f, 10.0f);
+
+		_att_sp.roll_body = _att_sp.roll_body + _roll_sp_corr/57.3f;
+		_att_sp.pitch_body = _att_sp.pitch_body + _pitch_sp_corr/57.3f;
 
 		/* copy quaternion setpoint to attitude setpoint topic */
 		matrix::Quatf q_sp = matrix::Eulerf(_att_sp.roll_body, _att_sp.pitch_body, _att_sp.yaw_body);
