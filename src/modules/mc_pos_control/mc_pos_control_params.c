@@ -603,3 +603,18 @@ PARAM_DEFINE_FLOAT(MPC_TKO_RAMP_T, 0.4f);
  * @group Multicopter Position Control
  */
 PARAM_DEFINE_INT32(MPC_FLT_TSK, 0);
+
+/**
+ * czq. Before flights, set the yaw sp to the current heading, mainly used in the attitude control mode.
+ */
+PARAM_DEFINE_FLOAT(BEGIN_EXP, -1.0f);
+
+/**
+ * Yun 20210714. Roll setpoint correction to weaken the drift of the vehicle in the attitude control mode.
+ */
+PARAM_DEFINE_FLOAT(ROLL_SP_CORR, 0.0f);
+
+/**
+ * Yun 20210714. Pitch setpoint correction to weaken the drift of the vehicle in the attitude control mode.
+ */
+PARAM_DEFINE_FLOAT(PITCH_SP_CORR, 0.0f);
