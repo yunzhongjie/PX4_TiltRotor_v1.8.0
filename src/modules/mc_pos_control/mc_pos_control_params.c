@@ -624,3 +624,8 @@ PARAM_DEFINE_FLOAT(ROLL_SP_CORR, 0.0f);
  * Yun 20210714. Pitch setpoint correction to weaken the drift of the vehicle in the attitude control mode.
  */
 PARAM_DEFINE_FLOAT(PITCH_SP_CORR, 0.0f);
+
+/**
+ * Yun 20210714. Yaw setpoint correction to weaken the drift of the vehicle in the attitude control mode.
+ */
+PARAM_DEFINE_FLOAT(YAW_SP_CORR, 0.0f);
